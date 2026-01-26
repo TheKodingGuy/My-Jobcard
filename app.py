@@ -35,7 +35,10 @@ with st.form("job_form", clear_on_submit=True):
         if not work_done:
             st.error("Please enter work description.")
         else:
-            # Prepare new data
+            # 1. READ FRESH DATA (ttl=0 is the key!)
+            existing_data = conn.read(spreadsheet=SHEET_URL, ttl=0)
+            
+            # 2. Prepare new data
             new_entry = pd.DataFrame([{
                 "Date": str(job_date),
                 "Site": site,
@@ -44,13 +47,13 @@ with st.form("job_form", clear_on_submit=True):
                 "Technician": tech
             }])
             
-            # Get existing data, add new row, and update sheet
-            existing_data = conn.read(spreadsheet=SHEET_URL)
+            # 3. Combine and Update
             updated_df = pd.concat([existing_data, new_entry], ignore_index=True)
             conn.update(spreadsheet=SHEET_URL, data=updated_df)
             
             st.success("✅ Saved to Google Sheets!")
 
 if st.checkbox("Show History"):
-    data = conn.read(spreadsheet=SHEET_URL)
+    # Add ttl=0 here too so you see the new rows immediately
+    data = conn.read(spreadsheet=SHEET_URL, ttl=0)
     st.dataframe(data.tail(10))
