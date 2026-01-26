@@ -3,10 +3,17 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import date
 
-# --- CONFIGURATION ---
-# Replace this with your Google Sheet URL
-SHEET_URL = "PASTE_YOUR_GOOGLE_SHEET_URL_HERE"
+# --- PAGE SETUP ---
+st.set_page_config(page_title="Cloud Job Card", layout="wide")
+st.title("🏗️ Cloud Job Card System")
 
+# 1. Create connection
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# 2. Grab the URL from Secrets (This is the secure way)
+SHEET_URL = st.secrets["spreadsheet"]
+
+# 3. Rest of your lists...
 SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
 TECH_LIST = ["John Smith", "Jane Doe", "Alex Rivera"]
 MATERIAL_LIST = ["Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant"]
