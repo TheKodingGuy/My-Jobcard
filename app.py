@@ -18,12 +18,6 @@ SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
 TECH_LIST = ["John Smith", "Jane Doe", "Alex Rivera"]
 MATERIAL_LIST = ["Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant"]
 
-st.set_page_config(page_title="Cloud Job Card", layout="wide")
-st.title("🏗️ Cloud Job Card System")
-
-# Create connection to Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 with st.form("job_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
