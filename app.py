@@ -13,7 +13,9 @@ SHEET_URL = st.secrets["spreadsheet"]
 
 # 2. Lists
 SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
-TECH_LIST = ["John Smith", "Jane Doe", "Alex Rivera"]
+
+TECH_LIST = ["Denver", "Randell", "Wynand", "Lionel", "Austin", "Audrine", "Sam", "Wayne", "Ernest", "Denzel", "James", "Brad", "Sylvester", "Elvin", "Daniello"]
+
 MATERIAL_LIST = ["Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant", "Screws", "Brackets"]
 
 # 3. Initialize Session State for the temporary list
