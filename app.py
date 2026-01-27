@@ -48,9 +48,8 @@ with c2:
 
 # "Done" button to add the selection to the pending list
 if st.button("✅ Done"):
-    # Adds the current item to the list
+    # Adds the current item to the list and updates the screen
     st.session_state.temp_materials.append({"item": selected_item, "qty": selected_qty})
-    st.toast(f"Added {selected_item} (x{selected_qty})")
 
 # Display the current list of materials added so far
 if st.session_state.temp_materials:
