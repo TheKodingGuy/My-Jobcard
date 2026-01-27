@@ -14,7 +14,11 @@ SHEET_URL = st.secrets["spreadsheet"]
 # 2. Lists
 SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
 
-TECH_LIST = ["Denver", "Randell", "Wynand", "Lionel", "Austin", "Audrine", "Sam", "Wayne", "Ernest", "Denzel", "James", "Brad", "Sylvester", "Elvin", "Daniello"]
+TECH_LIST = [
+    "Denver", "Randell", "Wynand", "Lionel", "Austin", "Audrine", 
+    "Sam", "Wayne", "Ernest", "Denzel", "James", "Brad", 
+    "Sylvester", "Elvin", "Daniello"
+]
 
 MATERIAL_LIST = ["Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant", "Screws", "Brackets"]
 
@@ -42,21 +46,11 @@ with c1:
 with c2:
     selected_qty = st.number_input("Quantity", min_value=1, step=1)
 
-# Buttons for adding materials
-btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-
-with btn_col1:
-    if st.button("✅ Done"):
-        # Just adds the current item to the list
-        st.session_state.temp_materials.append({"item": selected_item, "qty": selected_qty})
-        st.toast(f"Added {selected_item}")
-
-with btn_col2:
-    if st.button("➕ Add More Material"):
-        # Adds the current item to the list
-        st.session_state.temp_materials.append({"item": selected_item, "qty": selected_qty})
-        st.toast("Added! Ready for next item.")
-        # Note: Streamlit selectboxes reset on rerun, so this prepares the UI for the next selection
+# "Done" button to add the selection to the pending list
+if st.button("✅ Done"):
+    # Adds the current item to the list
+    st.session_state.temp_materials.append({"item": selected_item, "qty": selected_qty})
+    st.toast(f"Added {selected_item} (x{selected_qty})")
 
 # Display the current list of materials added so far
 if st.session_state.temp_materials:
@@ -75,9 +69,9 @@ if st.button("🚀 SAVE FULL JOB CARD TO CLOUD"):
     if not work_done:
         st.error("Please enter a description of the work.")
     elif not st.session_state.temp_materials:
-        st.error("Please add at least one material item.")
+        st.error("Please add at least one material item using the 'Done' button.")
     else:
-        # 1. READ FRESH DATA (ttl=0 avoids overwriting)
+        # 1. READ FRESH DATA
         existing_data = conn.read(spreadsheet=SHEET_URL, ttl=0)
         
         # 2. Format the material list into a single string
