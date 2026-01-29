@@ -55,13 +55,17 @@ with t_col1:
     selected_tech = st.selectbox("Pick Technician", options=TECH_LIST)
 with t_col2:
     st.write(" ") # Padding
-    if st.button("➕ Add Technician"):
-        if selected_tech not in st.session_state.temp_techs:
+    if st.button("✅ Done", key="btn_add_tech"):
+        # Check for duplicates before adding
+        if selected_tech in st.session_state.temp_techs:
+            st.warning(f"{selected_tech} is already added to this card.")
+        else:
             st.session_state.temp_techs.append(selected_tech)
 
-# Display selected technicians
+# Display selected technicians as removable tags
 if st.session_state.temp_techs:
-    cols = st.columns(4) # Show names in 4 small columns
+    st.write("**Added Technicians:**")
+    cols = st.columns(4) 
     for idx, t in enumerate(st.session_state.temp_techs):
         with cols[idx % 4]:
             if st.button(f"🗑️ {t}", key=f"t_{idx}"):
@@ -82,15 +86,16 @@ with c3:
     default_unit_idx = 1 if any(x in selected_item for x in ["Conduit", "Wire", "Tubing"]) else 0
     selected_unit = st.selectbox("Unit", options=UNIT_LIST, index=default_unit_idx)
 
-if st.button("✅ Add Material"):
+if st.button("✅ Done", key="btn_add_material"):
     st.session_state.temp_materials.append({
         "item": selected_item, 
         "qty": selected_qty, 
         "unit": selected_unit
     })
 
-# Display added materials
+# Display added materials list
 if st.session_state.temp_materials:
+    st.write("**Added Materials:**")
     for idx, m in enumerate(st.session_state.temp_materials):
         mc1, mc2 = st.columns([0.9, 0.1])
         mc1.info(f"{m['item']} ({m['qty']} {m['unit']})")
@@ -101,7 +106,7 @@ if st.session_state.temp_materials:
 st.markdown("---")
 
 # --- FINAL SAVE ACTION ---
-if st.button("🚀 SAVE TO CLOUD"):
+if st.button("🚀 SAVE FULL JOB CARD TO CLOUD"):
     if not work_done:
         st.error("Please enter a description.")
     elif not st.session_state.temp_techs:
