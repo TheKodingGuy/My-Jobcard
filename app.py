@@ -10,15 +10,19 @@ st.set_page_config(page_title="Cloud Job Card", layout="wide")
 conn = st.connection("gsheets", type=GSheetsConnection)
 SHEET_URL = st.secrets["spreadsheet"]
 
-# 2. Lists
-SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
-TECH_LIST = [
+# 2. Base Data Lists
+ALL_TECHS = [
     "Denver", "Randell", "Wynand", "Lionel", "Austin", "Audrine", 
     "Sam", "Wayne", "Ernest", "Denzel", "James", "Brad", 
     "Sylvester", "Elvin", "Daniello"
 ]
+
+SITE_LIST = ["Site A", "Site B", "Site C", "Other"]
+
 MATERIAL_LIST = ["PVC Conduit", "Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant", "Screws", "Brackets"]
-UNIT_LIST = ["Units", "Meters", "Boxes", "Liters", "Rolls"]
+
+# Define which items are allowed to use "Meters"
+METER_ITEMS = ["PVC Conduit", "Copper Tubing", "PVC Pipe", "Electrical Wire"]
 
 # 3. Initialize Session State for dynamic lists
 if "temp_materials" not in st.session_state:
@@ -29,8 +33,8 @@ if "temp_techs" not in st.session_state:
 # --- APP HEADER ---
 st.title("🏗️ Job Card System")
 
-# Toggle for Job Type
-job_type = st.radio("Select Card Type:", ["Jobcard (Completed Job)", "Pre-Jobcard (Planned Job)"], horizontal=True)
+# Updated: Card Type as a Dropdown
+job_type = st.selectbox("Select Card Type:", ["Jobcard (Completed Job)", "Pre-Jobcard (Planned Job)"])
 
 st.markdown("---")
 
@@ -50,17 +54,24 @@ st.markdown("---")
 
 # --- UI LAYOUT: MULTIPLE TECHNICIANS ---
 st.subheader("👨‍🔧 Technicians Assigned")
+
+# Updated: Filter the list to hide technicians already added
+available_techs = [t for t in ALL_TECHS if t not in st.session_state.temp_techs]
+
 t_col1, t_col2 = st.columns([3, 1])
 with t_col1:
-    selected_tech = st.selectbox("Pick Technician", options=TECH_LIST)
+    # If all techs are added, disable the box
+    if not available_techs:
+        st.info("All technicians have been added.")
+        selected_tech = None
+    else:
+        selected_tech = st.selectbox("Pick Technician", options=available_techs)
+
 with t_col2:
     st.write(" ") # Padding
-    if st.button("✅ Done", key="btn_add_tech"):
-        # Check for duplicates before adding
-        if selected_tech in st.session_state.temp_techs:
-            st.warning(f"{selected_tech} is already added to this card.")
-        else:
-            st.session_state.temp_techs.append(selected_tech)
+    if st.button("✅ Done", key="btn_add_tech") and selected_tech:
+        st.session_state.temp_techs.append(selected_tech)
+        st.rerun() # Rerun to remove name from dropdown instantly
 
 # Display selected technicians as removable tags
 if st.session_state.temp_techs:
@@ -76,15 +87,23 @@ st.markdown("---")
 
 # --- UI LAYOUT: MATERIALS ---
 st.subheader("🛠️ Materials Required/Used")
-c1, c2, c3 = st.columns([2, 1, 1])
-with c1:
-    selected_item = st.selectbox("Pick Material", options=MATERIAL_LIST)
-with c2:
-    selected_qty = st.number_input("Amount", min_value=0.1, step=0.1, value=1.0)
-with c3:
-    # Auto-default to Meters for specific items
-    default_unit_idx = 1 if any(x in selected_item for x in ["Conduit", "Wire", "Tubing"]) else 0
-    selected_unit = st.selectbox("Unit", options=UNIT_LIST, index=default_unit_idx)
+
+# Single Material Select
+selected_item = st.selectbox("Pick Material", options=MATERIAL_LIST)
+
+# Updated: Conditional Unit logic
+is_meter_item = selected_item in METER_ITEMS
+
+if is_meter_item:
+    c1, c2 = st.columns(2)
+    with c1:
+        selected_qty = st.number_input("Amount", min_value=0.1, step=0.1, value=1.0)
+    with c2:
+        selected_unit = st.selectbox("Unit", options=["Meters", "Units"])
+else:
+    # For non-meter items, hide the unit box and lock it to "Units"
+    selected_qty = st.number_input("Number Used", min_value=1, step=1, value=1)
+    selected_unit = "Units"
 
 if st.button("✅ Done", key="btn_add_material"):
     st.session_state.temp_materials.append({
@@ -112,14 +131,11 @@ if st.button("🚀 SAVE FULL JOB CARD TO CLOUD"):
     elif not st.session_state.temp_techs:
         st.error("Please add at least one technician.")
     else:
-        # 1. READ FRESH DATA
         existing_data = conn.read(spreadsheet=SHEET_URL, ttl=0)
         
-        # 2. Format Lists
         mat_summary = ", ".join([f"{m['item']} ({m['qty']} {m['unit']})" for m in st.session_state.temp_materials])
         tech_summary = ", ".join(st.session_state.temp_techs)
         
-        # 3. Prepare row
         new_entry = pd.DataFrame([{
             "Type": job_type,
             "Date": str(job_date),
@@ -131,16 +147,13 @@ if st.button("🚀 SAVE FULL JOB CARD TO CLOUD"):
             "Technicians": tech_summary
         }])
         
-        # 4. Update Cloud
         updated_df = pd.concat([existing_data, new_entry], ignore_index=True)
         conn.update(spreadsheet=SHEET_URL, data=updated_df)
         
-        # 5. Reset App State
         st.session_state.temp_materials = []
         st.session_state.temp_techs = []
         st.success(f"✅ {job_type} successfully recorded!")
 
-# --- VIEW LOG ---
 if st.checkbox("Show Recent History"):
     data = conn.read(spreadsheet=SHEET_URL, ttl=0)
     st.dataframe(data.tail(10))
