@@ -20,7 +20,10 @@ TECH_LIST = [
     "Sylvester", "Elvin", "Daniello"
 ]
 
-MATERIAL_LIST = ["Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant", "Screws", "Brackets"]
+# Added PVC Conduit to the list
+MATERIAL_LIST = ["PVC Conduit", "Copper Tubing", "PVC Pipe", "Electrical Wire", "Sealant", "Screws", "Brackets"]
+# Define the measurement units
+UNIT_LIST = ["Units", "Meters", "Boxes", "Liters", "Rolls"]
 
 # 3. Initialize Session State for the temporary list
 if "temp_materials" not in st.session_state:
@@ -39,24 +42,33 @@ work_done = st.text_area("Description of Work Done")
 st.markdown("---")
 st.subheader("🛠️ Materials Used")
 
-# Single fill-in box for material entry
-c1, c2 = st.columns([3, 1])
+# Adjusted layout to include Material, Quantity, and Unit
+c1, c2, c3 = st.columns([2, 1, 1])
 with c1:
     selected_item = st.selectbox("Pick Material", options=MATERIAL_LIST)
 with c2:
-    selected_qty = st.number_input("Quantity", min_value=1, step=1)
+    selected_qty = st.number_input("Amount", min_value=0.1, step=0.1, value=1.0)
+with c3:
+    # Logic to default to 'Meters' if PVC Conduit is selected
+    default_unit_idx = 1 if "Conduit" in selected_item or "Wire" in selected_item or "Tubing" in selected_item else 0
+    selected_unit = st.selectbox("Unit", options=UNIT_LIST, index=default_unit_idx)
 
 # "Done" button to add the selection to the pending list
 if st.button("✅ Done"):
-    # Adds the current item to the list and updates the screen
-    st.session_state.temp_materials.append({"item": selected_item, "qty": selected_qty})
+    # Adds the current item, qty, and unit to the list
+    st.session_state.temp_materials.append({
+        "item": selected_item, 
+        "qty": selected_qty, 
+        "unit": selected_unit
+    })
 
 # Display the current list of materials added so far
 if st.session_state.temp_materials:
     st.markdown("### **List to be Saved:**")
     for idx, m in enumerate(st.session_state.temp_materials):
         col1, col2 = st.columns([0.9, 0.1])
-        col1.info(f"{m['item']} (x{m['qty']})")
+        # Display format: "PVC Conduit (10.0 Meters)"
+        col1.info(f"{m['item']} ({m['qty']} {m['unit']})")
         if col2.button("🗑️", key=f"delete_{idx}"):
             st.session_state.temp_materials.pop(idx)
             st.rerun()
@@ -73,8 +85,8 @@ if st.button("🚀 SAVE FULL JOB CARD TO CLOUD"):
         # 1. READ FRESH DATA
         existing_data = conn.read(spreadsheet=SHEET_URL, ttl=0)
         
-        # 2. Format the material list into a single string
-        mat_summary = ", ".join([f"{m['item']} (x{m['qty']})" for m in st.session_state.temp_materials])
+        # 2. Format the material list: "PVC Conduit (10.0 Meters), Screws (2.0 Boxes)"
+        mat_summary = ", ".join([f"{m['item']} ({m['qty']} {m['unit']})" for m in st.session_state.temp_materials])
         
         # 3. Prepare new row
         new_entry = pd.DataFrame([{
